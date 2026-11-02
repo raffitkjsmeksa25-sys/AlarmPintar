@@ -1,11 +1,10 @@
 
-from datetime import datetime
-
 from kivy.app import App
-from kivy.clock import Clock
 from kivy.core.window import Window
-from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.label import Label
+
+from screens.home import HomeScreen
+from screens.add_alarm import AddAlarm
+from services.alarm_manager import AlarmManager
 
 
 class SmartWakeApp(App):
@@ -14,46 +13,27 @@ class SmartWakeApp(App):
 
         Window.clearcolor = (0.06, 0.09, 0.15, 1)
 
-        layout = BoxLayout(
-            orientation="vertical",
-            padding=30,
-            spacing=20
-        )
+        self.alarm_manager = AlarmManager()
 
-        title = Label(
-            text="SMARTWAKE",
-            font_size="28sp",
-            bold=True,
-            color=(0.4, 0.7, 1, 1)
-        )
+        self.home = HomeScreen(self)
+        self.add_alarm_screen = AddAlarm(self)
 
-        self.clock_label = Label(
-            text="00:00:00",
-            font_size="42sp",
-            bold=True
-        )
+        return self.home
 
-        description = Label(
-            text="Smart Alarm Application",
-            font_size="16sp"
-        )
+    def open_add_alarm(self):
+        self.add_alarm_screen.open()
 
-        status = Label(
-            text="Selamat datang di SmartWake!",
-            font_size="14sp"
-        )
+    def add_alarm(self, alarm_time):
+        self.alarm_manager.add_alarm(alarm_time)
+        self.home.refresh_alarm_list()
 
-        layout.add_widget(title)
-        layout.add_widget(self.clock_label)
-        layout.add_widget(description)
-        layout.add_widget(status)
+    def remove_alarm(self, index):
+        self.alarm_manager.remove_alarm(index)
+        self.home.refresh_alarm_list()
 
-        Clock.schedule_interval(self.update_clock, 1)
-
-        return layout
-
-    def update_clock(self, dt):
-        self.clock_label.text = datetime.now().strftime("%H:%M:%S")
+    def toggle_alarm(self, index):
+        self.alarm_manager.toggle_alarm(index)
+        self.home.refresh_alarm_list()
 
 
 if __name__ == "__main__":
