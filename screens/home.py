@@ -81,6 +81,20 @@ class HomeScreen(BoxLayout):
             on_press=self.open_add_alarm
         )
 
+        camera_button = Button(
+            text="BUKA KAMERA",
+            font_size="16sp",
+            bold=True,
+            background_normal="",
+            background_color=(0.1, 0.35, 0.65, 1),
+            size_hint_y=None,
+            height=50
+        )
+
+        camera_button.bind(
+            on_press=lambda instance: self.app.open_camera()
+        )
+
         alarm_title = Label(
             text="[b]DAFTAR ALARM[/b]",
             markup=True,
@@ -109,6 +123,7 @@ class HomeScreen(BoxLayout):
         self.add_widget(self.clock_label)
         self.add_widget(self.status_label)
         self.add_widget(add_alarm_button)
+        self.add_widget(camera_button)
         self.add_widget(alarm_title)
         self.add_widget(scroll)
 

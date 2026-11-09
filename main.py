@@ -2,6 +2,7 @@
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock
+from kivy.uix.screenmanager import ScreenManager, Screen
 from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
@@ -10,10 +11,12 @@ from kivy.core.audio import SoundLoader
 
 from screens.home import HomeScreen
 from screens.add_alarm import AddAlarm
+from screens.camera_screen import CameraScreen
 from services.alarm_manager import AlarmManager
 
 
 class SmartWakeApp(App):
+
     def build(self):
         self.title = "SmartWake"
 
@@ -21,23 +24,46 @@ class SmartWakeApp(App):
 
         self.alarm_manager = AlarmManager()
 
-        # Memuat suara alarm
         self.alarm_sound = SoundLoader.load("sounds/alarm.wav")
 
         if self.alarm_sound:
             self.alarm_sound.loop = True
-        else:
-            print("File suara alarm tidak ditemukan!")
 
         self.home = HomeScreen(self)
+        self.camera_screen = CameraScreen(self)
         self.add_alarm_screen = AddAlarm(self)
+
+        self.screen_manager = ScreenManager()
+
+        home_page = Screen(name="home")
+        home_page.add_widget(self.home)
+
+        camera_page = Screen(name="camera")
+        camera_page.add_widget(self.camera_screen)
+
+        self.screen_manager.add_widget(home_page)
+        self.screen_manager.add_widget(camera_page)
 
         Clock.schedule_interval(self.check_alarms, 1)
 
-        return self.home
+        return self.screen_manager
+
+    def show_screen(self, screen):
+        if screen == self.camera_screen:
+            self.screen_manager.current = "camera"
+        else:
+            self.screen_manager.current = "home"
 
     def open_add_alarm(self):
         self.add_alarm_screen.open()
+
+    def open_camera(self):
+        self.show_screen(self.camera_screen)
+        self.camera_screen.start_camera()
+
+    def back_to_home(self):
+        self.camera_screen.stop_camera()
+        self.show_screen(self.home)
 
     def add_alarm(self, alarm_time):
         self.alarm_manager.add_alarm(alarm_time)
@@ -98,6 +124,9 @@ class SmartWakeApp(App):
             self.alarm_sound.play()
 
         popup.open()
+
+    def on_stop(self):
+        self.camera_screen.stop_camera()
 
 
 if __name__ == "__main__":
