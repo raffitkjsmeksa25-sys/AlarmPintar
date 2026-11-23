@@ -7,6 +7,7 @@ from kivy.uix.popup import Popup
 from kivy.uix.label import Label
 from kivy.uix.button import Button
 from kivy.uix.boxlayout import BoxLayout
+from kivy.uix.image import Image
 from kivy.core.audio import SoundLoader
 
 from screens.home import HomeScreen
@@ -28,6 +29,9 @@ class SmartWakeApp(App):
 
         if self.alarm_sound:
             self.alarm_sound.loop = True
+
+        self.active_alarm_popup = None
+        self.alarm_popup_event = None
 
         self.home = HomeScreen(self)
         self.camera_screen = CameraScreen(self)
@@ -81,9 +85,15 @@ class SmartWakeApp(App):
         ringing_alarms = self.alarm_manager.check_alarms()
 
         for alarm_time in ringing_alarms:
-            self.show_alarm_popup(alarm_time)
+            if self.active_alarm_popup is None:
+                self.show_alarm_popup(alarm_time)
 
     def show_alarm_popup(self, alarm_time):
+
+        # Aktifkan kamera
+        self.show_screen(self.camera_screen)
+        self.camera_screen.start_camera()
+
         content = BoxLayout(
             orientation="vertical",
             padding=15,
@@ -93,30 +103,87 @@ class SmartWakeApp(App):
         message = Label(
             text=f"ALARM BERBUNYI!\nWaktu: {alarm_time}",
             font_size="22sp",
-            bold=True
+            bold=True,
+            size_hint_y=None,
+            height=65
+        )
+
+        # Tampilan kamera di popup
+        popup_camera = Image(
+            allow_stretch=True,
+            keep_ratio=True
+        )
+
+        status_label = Label(
+            text="Menunggu deteksi mata...",
+            size_hint_y=None,
+            height=40
         )
 
         stop_button = Button(
-            text="MATIKAN ALARM",
+            text="BUKA MATA UNTUK MEMATIKAN",
             size_hint_y=None,
-            height=50
+            height=55,
+            disabled=True
         )
 
         content.add_widget(message)
+        content.add_widget(popup_camera)
+        content.add_widget(status_label)
         content.add_widget(stop_button)
 
         popup = Popup(
             title="SMARTWAKE",
             content=content,
-            size_hint=(0.85, 0.4),
+            size_hint=(0.9, 0.85),
             auto_dismiss=False
         )
 
+        self.active_alarm_popup = popup
+
+        open_count = {"value": 0}
+
+        def update_alarm_preview(dt):
+
+            # Ambil gambar kamera terbaru
+            popup_camera.texture = self.camera_screen.preview.texture
+
+            # Ambil status mata
+            eye_status = self.camera_screen.eye_status.text
+            status_label.text = eye_status
+
+            if eye_status.startswith("MATA TERBUKA"):
+                open_count["value"] += 1
+            else:
+                open_count["value"] = 0
+
+            # Mata harus terbuka stabil sekitar 1 detik
+            if open_count["value"] >= 10:
+                stop_button.disabled = False
+                stop_button.text = "MATIKAN ALARM"
+            else:
+                stop_button.disabled = True
+                stop_button.text = "BUKA MATA UNTUK MEMATIKAN"
+
         def stop_alarm(instance):
+
+            if stop_button.disabled:
+                return
+
             if self.alarm_sound:
                 self.alarm_sound.stop()
 
+            if self.alarm_popup_event:
+                self.alarm_popup_event.cancel()
+                self.alarm_popup_event = None
+
             popup.dismiss()
+            self.active_alarm_popup = None
+
+            self.camera_screen.stop_camera()
+            self.show_screen(self.home)
+
+            print("Alarm berhasil dimatikan!")
 
         stop_button.bind(on_press=stop_alarm)
 
@@ -125,7 +192,20 @@ class SmartWakeApp(App):
 
         popup.open()
 
+        self.alarm_popup_event = Clock.schedule_interval(
+            update_alarm_preview,
+            0.1
+        )
+
     def on_stop(self):
+
+        if self.alarm_popup_event:
+            self.alarm_popup_event.cancel()
+            self.alarm_popup_event = None
+
+        if self.alarm_sound:
+            self.alarm_sound.stop()
+
         self.camera_screen.stop_camera()
 
 
