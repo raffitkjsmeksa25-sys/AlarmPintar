@@ -1,4 +1,7 @@
 
+import os
+import sys
+
 from kivy.app import App
 from kivy.core.window import Window
 from kivy.clock import Clock
@@ -16,6 +19,13 @@ from screens.camera_screen import CameraScreen
 from services.alarm_manager import AlarmManager
 
 
+# Menentukan lokasi file pendukung aplikasi
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
 class SmartWakeApp(App):
 
     def build(self):
@@ -25,7 +35,14 @@ class SmartWakeApp(App):
 
         self.alarm_manager = AlarmManager()
 
-        self.alarm_sound = SoundLoader.load("sounds/alarm.wav")
+        # Memuat suara alarm
+        sound_path = os.path.join(
+            BASE_DIR,
+            "sounds",
+            "alarm.wav"
+        )
+
+        self.alarm_sound = SoundLoader.load(sound_path)
 
         if self.alarm_sound:
             self.alarm_sound.loop = True
@@ -90,7 +107,7 @@ class SmartWakeApp(App):
 
     def show_alarm_popup(self, alarm_time):
 
-        # Aktifkan kamera
+        # Mengaktifkan kamera
         self.show_screen(self.camera_screen)
         self.camera_screen.start_camera()
 
@@ -108,7 +125,6 @@ class SmartWakeApp(App):
             height=65
         )
 
-        # Tampilan kamera di popup
         popup_camera = Image(
             allow_stretch=True,
             keep_ratio=True
@@ -145,10 +161,8 @@ class SmartWakeApp(App):
 
         def update_alarm_preview(dt):
 
-            # Ambil gambar kamera terbaru
             popup_camera.texture = self.camera_screen.preview.texture
 
-            # Ambil status mata
             eye_status = self.camera_screen.eye_status.text
             status_label.text = eye_status
 
@@ -157,7 +171,6 @@ class SmartWakeApp(App):
             else:
                 open_count["value"] = 0
 
-            # Mata harus terbuka stabil sekitar 1 detik
             if open_count["value"] >= 10:
                 stop_button.disabled = False
                 stop_button.text = "MATIKAN ALARM"

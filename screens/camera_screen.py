@@ -1,6 +1,7 @@
 
 import cv2
 import os
+import sys
 import time
 import math
 import mediapipe as mp
@@ -13,9 +14,17 @@ from kivy.uix.label import Label
 from kivy.graphics.texture import Texture
 
 
+# Menentukan lokasi folder aplikasi
+if getattr(sys, "frozen", False):
+    BASE_DIR = sys._MEIPASS
+else:
+    BASE_DIR = os.path.dirname(
+        os.path.dirname(os.path.abspath(__file__))
+    )
+
 # Lokasi model MediaPipe
 MODEL_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(__file__)),
+    BASE_DIR,
     "face_landmarker.task"
 )
 
@@ -117,10 +126,10 @@ class CameraScreen(BoxLayout):
                 self.camera = None
                 self.landmarker.close()
                 self.landmarker = None
+                self.eye_status.text = "Kamera gagal dibuka!"
                 return
 
             print("Kamera SmartWake berhasil dibuka!")
-
             self.eye_status.text = "Mendeteksi mata..."
 
             self.camera_event = Clock.schedule_interval(
@@ -203,7 +212,6 @@ class CameraScreen(BoxLayout):
         else:
             status = "WAJAH TIDAK TERDETEKSI"
             color = (0, 0, 255)
-
             self.eye_status.text = status
 
         cv2.putText(

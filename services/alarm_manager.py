@@ -1,17 +1,37 @@
 
 import json
 import os
+import sys
 from datetime import datetime
 
 
 class AlarmManager:
+
     def __init__(self):
         self.alarms = []
 
-        self.file_path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "alarms.json"
-        )
+        if getattr(sys, "frozen", False):
+            # Penyimpanan permanen untuk aplikasi EXE
+            app_data = os.environ.get("APPDATA", os.path.expanduser("~"))
+
+            data_folder = os.path.join(
+                app_data,
+                "SmartWake"
+            )
+
+            os.makedirs(data_folder, exist_ok=True)
+
+            self.file_path = os.path.join(
+                data_folder,
+                "alarms.json"
+            )
+
+        else:
+            # Penyimpanan ketika dijalankan melalui Python
+            self.file_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                "alarms.json"
+            )
 
         self.load_alarms()
 
@@ -20,6 +40,7 @@ class AlarmManager:
             try:
                 with open(self.file_path, "r") as file:
                     self.alarms = json.load(file)
+
             except (json.JSONDecodeError, OSError):
                 self.alarms = []
 
